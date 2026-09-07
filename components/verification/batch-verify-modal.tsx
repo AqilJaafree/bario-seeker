@@ -80,6 +80,21 @@ export const BatchVerifyModal: React.FC<BatchVerifyModalProps> = ({
     void load(initialBatchId);
   }, [isOpen, initialBatchId, load]);
 
+  // Escape closes, and the page behind does not scroll while the dialog is up.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const batch = state.status === "ok" ? state.batch : null;
@@ -97,8 +112,14 @@ export const BatchVerifyModal: React.FC<BatchVerifyModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="batch-certificate-title"
         className="bg-card text-card-foreground border border-border/80 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -114,7 +135,10 @@ export const BatchVerifyModal: React.FC<BatchVerifyModalProps> = ({
                     : "bg-rose-500"
               }`}
             />
-            <span className="text-xs font-mono font-medium text-foreground tracking-wide">
+            <span
+              id="batch-certificate-title"
+              className="text-xs font-mono font-medium text-foreground tracking-wide"
+            >
               BATCH CERTIFICATE #{batch?.batchCode ?? initialBatchId}
             </span>
           </div>
@@ -241,13 +265,12 @@ export const BatchVerifyModal: React.FC<BatchVerifyModalProps> = ({
                     )}
                   </div>
 
-                  <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-y-1 gap-x-2">
+                  <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-y-0.5 gap-x-3">
                     <span className="flex items-center gap-1">
-                      <MapPinIcon className="size-3 text-muted-foreground" />
+                      <MapPinIcon className="size-3 text-muted-foreground shrink-0" />
                       {batch.producerLocation}
                     </span>
-                    <span>•</span>
-                    <span>Elevation: {batch.farmElevationM}m</span>
+                    <span>{batch.farmElevationM} m elevation</span>
                   </div>
                   <a
                     href={explorerUrl(batch.producerAsset, batch.cluster)}

@@ -114,6 +114,19 @@ export async function loadBatch(batchPda: PublicKey): Promise<BatchView | null> 
 
   const audit = [...journey].reverse().find((s) => s.kind === "audit") ?? null;
   const farm = journey.find((s) => s.kind === "farm") ?? null;
+
+  // The program labels checkpoint #0 as "<producer name>, Bario", which reads
+  // as a stutter directly under the producer's name in the UI. Strip the
+  // prefix and name the region properly.
+  const farmPlace = (() => {
+    const label = farm?.label?.trim();
+    if (!label) return "Bario Highlands, Sarawak";
+    const prefix = `${producer.name},`;
+    const rest = label.startsWith(prefix)
+      ? label.slice(prefix.length).trim()
+      : label;
+    return !rest || /^bario$/i.test(rest) ? "Bario Highlands, Sarawak" : rest;
+  })();
   const grade = variant<GradeKey>(batch.grade);
   const last = journey[journey.length - 1];
 
@@ -136,7 +149,7 @@ export async function loadBatch(batchPda: PublicKey): Promise<BatchView | null> 
     farmgatePriceSen: batch.farmgatePriceSen,
 
     producerName: producer.name,
-    producerLocation: farm?.label ?? "Bario Highlands, Sarawak",
+    producerLocation: farmPlace,
     farmLat: producer.farmLat,
     farmLon: producer.farmLon,
     farmElevationM: producer.farmElevationM,
