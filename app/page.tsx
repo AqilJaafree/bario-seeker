@@ -53,7 +53,7 @@ export default function Home() {
 
             {/* Right Description & Quick CTA */}
             <div className="max-w-md space-y-4">
-              <p className="text-xs sm:text-sm text-white/85 leading-relaxed drop-shadow-md">
+              <p className="text-base text-white leading-relaxed drop-shadow-md">
                 Every bag traces back to a real Kelabit farmer, with the grade
                 and price checked by us before it hits the shelf.
                 <br />
