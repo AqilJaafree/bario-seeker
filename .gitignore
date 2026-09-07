@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code local session state
+.claude/
+
+# Solana / Anchor build output and keypairs.
+# Belt-and-braces: bario-seeker-program/.gitignore already covers these, but a
+# leaked keypair cannot be un-leaked, so the rules are repeated at the root.
+**/target/
+**/.anchor/
+**/test-ledger/
+.demo-keys.json
+**/scripts/.demo-keys.json
+*-keypair.json
+*.so
+id.json

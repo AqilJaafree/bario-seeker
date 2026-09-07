@@ -1,0 +1,33 @@
+[package]
+name = "bario-seeker-program"
+version = "0.1.0"
+description = "Bario Seeker — soulbound provenance, grading and geotagged journey checkpoints for Bario rice"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "bario_seeker_program"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "0.32.1"
+mpl-core = { version = "0.12.1", default-features = false, features = ["anchor-0-32"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+# The SBF toolchain that ships with solana-cli 2.3.13 is rustc 1.84, which
+# predates edition2024 and cannot build some transitive dependencies.
+# platform-tools v1.54 is rustc 1.89 and builds cleanly.
+[package.metadata.solana]
+tools-version = "v1.54"
