@@ -41,7 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 # Claude Code local session state
-.claude/
+.agents
+.claude
 
 # Solana / Anchor build output and keypairs.
 # Belt-and-braces: bario-seeker-program/.gitignore already covers these, but a
