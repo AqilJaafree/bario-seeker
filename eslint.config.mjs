@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The Anchor program is a separate project with its own toolchain.
+    // See docs/repo-structure.md.
+    "bario-seeker-program/**",
   ]),
 ]);
 
