@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { SAMPLE_BATCH_2026 } from "@/lib/data/malaysia-prices";
 import {
   XIcon,
@@ -18,13 +19,11 @@ import {
 interface BatchVerifyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialBatchId?: string;
 }
 
 export const BatchVerifyModal: React.FC<BatchVerifyModalProps> = ({
   isOpen,
   onClose,
-  initialBatchId = "2026-11-001",
 }) => {
   const [reportSuccess, setReportSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -88,9 +87,11 @@ export const BatchVerifyModal: React.FC<BatchVerifyModalProps> = ({
 
           {/* Producer Profile Section */}
           <div className="flex items-start gap-4 border border-border/60 p-4 rounded-2xl bg-muted/20">
-            <img
+            <Image
               src={batch.producerPhoto}
               alt={batch.producerName}
+              width={64}
+              height={64}
               className="size-16 rounded-xl object-cover border border-border shadow-xs shrink-0"
             />
             <div className="flex-1 min-w-0">
