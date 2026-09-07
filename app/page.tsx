@@ -1,21 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { MalaysiaMap } from "@/components/map/malaysia-map";
 import { BatchVerifyModal } from "@/components/verification/batch-verify-modal";
-import {
-  ShieldCheck,
-  MagnifyingGlass,
-  QrCode,
-  Sparkle,
-  TrendUp,
-  CheckCircle,
-  Plant,
-  Certificate,
-  ArrowsLeftRight,
-  ArrowUpRight,
-  Scales,
-} from "@phosphor-icons/react";
+import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
+import { ArrowCircle } from "@/components/ui/arrow-circle";
+import { LimeButton } from "@/components/ui/lime-button";
+import { QrCodeIcon } from "@phosphor-icons/react";
 
 export default function Home() {
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
@@ -27,385 +20,378 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      {/* 1. Minimalist Top Navigation */}
-      <header className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/90 backdrop-blur-md transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-foreground text-background flex items-center justify-center shadow-xs">
-              <Plant weight="fill" className="size-5" />
-            </div>
-            <div>
-              <span className="font-serif text-lg tracking-tight font-semibold block leading-none text-foreground">
-                Bario Seeker
-              </span>
-              <span className="text-[10px] text-muted-foreground font-mono tracking-wider uppercase block mt-0.5">
-                Sarawak Highland Provenance
-              </span>
-            </div>
-          </div>
-
-          {/* Center Quick Search (Desktop) */}
-          <form
-            onSubmit={handleSearchSubmit}
-            className="hidden md:flex items-center relative max-w-xs w-full"
-          >
-            <MagnifyingGlass className="absolute left-3 size-4 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search batch (e.g. 2026-11-001)..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 pr-14 py-1.5 text-xs bg-muted/40 hover:bg-muted/60 focus:bg-background border border-border/60 rounded-full focus:outline-none focus:ring-1 focus:ring-foreground transition-all"
+    <div className="min-h-screen bg-[#F5F6F1] dark:bg-[#111813] text-[#111813] dark:text-[#F5F6F1] flex flex-col font-sans selection:bg-[#D4F63D] selection:text-black">
+      {/* Main Container Wrapper */}
+      <div className="w-full mx-auto space-y-12">
+        {/* ========================================================================= */}
+        {/* 1. HERO SECTION: Full-width rounded card with highland terrace background */}
+        {/* ========================================================================= */}
+        <section className="relative overflow-hidden min-h-145 md:min-h-165 flex flex-col justify-between p-6 sm:p-10 text-white">
+          {/* Background Image with Dark Vignette Gradient */}
+          <div className="absolute inset-0 z-10">
+            <Image
+              src="/images/bario-hero.jpg"
+              alt="Bario Highland Rice Terraces, Sarawak"
+              fill
+              priority
+              className="object-cover object-center brightness-[0.88] contrast-[1.05]"
             />
-            <button
-              type="submit"
-              className="absolute right-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors cursor-pointer"
-            >
-              Verify
-            </button>
-          </form>
-
-          {/* Right Action */}
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setIsVerifyModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all shadow-xs cursor-pointer"
-            >
-              <QrCode className="size-4" />
-              <span>Verify Batch QR</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* 2. Minimalist Hero Section */}
-      <section className="relative pt-12 pb-8 md:pt-18 md:pb-12 border-b border-border/60 overflow-hidden">
-        {/* Subtle geometric backdrop glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-gradient-to-b from-emerald-50/50 dark:from-emerald-950/20 to-transparent -z-10 blur-2xl pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/80 bg-muted/30 text-xs text-muted-foreground font-medium mb-5 shadow-2xs">
-            <span className="size-2 rounded-full bg-emerald-600 animate-pulse" />
-            <span>2026 Harvest Season Active</span>
-            <span className="text-border">•</span>
-            <span className="text-foreground">Sarawak DOA Traceability</span>
+            {/* Soft dark gradient overlays so topbar and bottom text are legible */}
+            <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/20 to-black/85" />
           </div>
 
-          {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-normal tracking-tight text-foreground leading-[1.12]">
-            Highland Purity. <br />
-            <span className="italic font-light text-muted-foreground">
-              Transparent Farm-to-Shelf Price.
-            </span>
-          </h1>
+          <Navbar onVerifyClick={() => setIsVerifyModalOpen(true)} />
 
-          {/* Subheading */}
-          <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Every bag bound directly to verified Kelabit smallholders at
-            1,100m+ elevation. Track authentic Malaysian shelf prices, inspect
-            audited lab grades, and eliminate counterfeit markups.
-          </p>
-
-          {/* Quick Instant Batch Search Bar */}
-          <form
-            onSubmit={handleSearchSubmit}
-            className="mt-8 max-w-md mx-auto flex items-center bg-card border border-border/90 rounded-2xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-foreground/20 transition-all"
-          >
-            <div className="pl-3 text-muted-foreground">
-              <QrCode className="size-5" />
-            </div>
-            <input
-              type="text"
-              placeholder="Enter bag serial or batch # (try 2026-11-001)"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all shrink-0 cursor-pointer"
-            >
-              Verify Now
-            </button>
-          </form>
-
-          {/* Key Metric Pills */}
-          <div className="mt-8 pt-6 border-t border-border/40 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-            <div className="p-3 bg-muted/20 rounded-xl border border-border/40">
-              <div className="text-[11px] text-muted-foreground font-mono uppercase">
-                Base Farmgate
-              </div>
-              <div className="text-lg font-mono font-semibold text-foreground mt-0.5">
-                RM 15.50
-                <span className="text-xs font-normal text-muted-foreground">
-                  /kg
-                </span>
-              </div>
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                Paid to highland farmer
-              </div>
+          {/* Hero Bottom Split Content */}
+          <div className="w-full flex flex-col md:flex-row md:items-end justify-between gap-8 pt-24 pb-4 z-20">
+            {/* Left Big Headline */}
+            <div className="max-w-2xl">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-heading font-extrabold tracking-tight text-white leading-[1.08] drop-shadow-lg">
+                Know Your Bario Rice.
+              </h1>
             </div>
 
-            <div className="p-3 bg-muted/20 rounded-xl border border-border/40">
-              <div className="text-[11px] text-muted-foreground font-mono uppercase">
-                KL Retail Average
-              </div>
-              <div className="text-lg font-mono font-semibold text-foreground mt-0.5">
-                RM 24.50
-                <span className="text-xs font-normal text-muted-foreground">
-                  /kg
-                </span>
-              </div>
-              <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
-                +58% distribution markup
-              </div>
+            {/* Right Description & Quick CTA */}
+            <div className="max-w-md space-y-4">
+              <p className="text-xs sm:text-sm text-white/85 leading-relaxed drop-shadow-md">
+                Every bag traces back to a real Kelabit farmer, with the grade
+                and price checked by us before it hits the shelf.
+                <br />
+                Scan the code. Know what you&apos;re paying for.
+              </p>
+
+              {/* Instant Search Bar inside Hero */}
+              <form
+                onSubmit={handleSearchSubmit}
+                className="flex items-center bg-black/55 backdrop-blur-md border border-white/20 rounded-full p-1.5 shadow-xl focus-within:ring-2 focus-within:ring-[#D4F63D]"
+              >
+                <div className="pl-3.5 text-white/60">
+                  <QrCodeIcon className="size-4" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Enter bag serial (e.g. 2026-11-001)"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full px-2.5 py-1 text-xs bg-transparent border-none text-white placeholder:text-white/50 focus:outline-none"
+                />
+                <LimeButton
+                  type="submit"
+                  className="gap-1.5 text-xs px-3.5 py-1.5 shrink-0"
+                >
+                  <span>Verify Batch</span>
+                  <ArrowCircle
+                    size="size-4"
+                    iconSize="size-2.5"
+                    animated={false}
+                    stroke={false}
+                  />
+                </LimeButton>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* 2. MISSION & BENTO GRID ("Farming Made Smarter" Style)                    */}
+        {/* ========================================================================= */}
+        <section
+          id="mission"
+          className="space-y-8 pt-4 max-w-7xl mx-auto px-4 lg:px-0"
+        >
+          {/* Top Pill & Two-Column Split */}
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/10 dark:border-white/15 bg-white dark:bg-white/5 text-xs text-black/80 dark:text-white/80 font-semibold shadow-2xs">
+              <span>Grown in Bario. Nowhere else.</span>
             </div>
 
-            <div className="p-3 bg-muted/20 rounded-xl border border-border/40">
-              <div className="text-[11px] text-muted-foreground font-mono uppercase">
-                Audited Grade
-              </div>
-              <div className="text-lg font-mono font-semibold text-foreground mt-0.5">
-                Grade A1
-              </div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">
-                &lt;5% broken, &lt;12% moisture
-              </div>
-            </div>
+            <div className="max-w-3xl space-y-4">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold tracking-tight text-[#0C2317] dark:text-white leading-[1.15]">
+                Half the &quot;Bario&quot; rice on shelves isn&apos;t Bario. We fix that.
+              </h2>
 
-            <div className="p-3 bg-muted/20 rounded-xl border border-border/40">
-              <div className="text-[11px] text-muted-foreground font-mono uppercase">
-                Verification Time
-              </div>
-              <div className="text-lg font-mono font-semibold text-foreground mt-0.5">
-                &lt; 2 Seconds
-              </div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">
-                Zero app / wallet needed
+              <p className="text-base sm:text-lg text-[#0C2317]/80 dark:text-white/75 leading-relaxed max-w-[65ch]">
+                Nearly half the rice sold as Bario in KL supermarkets isn&apos;t.
+                Grades get invented. Prices swing from RM18 to RM28 for the
+                same bag. We check every batch at the mill, print a code you
+                can scan, and show you what the farmer got paid, so you know
+                what you&apos;re buying and they get their share.
+              </p>
+
+              <div className="pt-1">
+                <LimeButton
+                  as="a"
+                  href="#price-map"
+                  className="gap-2 text-xs px-5 py-2.5 shadow-xs"
+                >
+                  <span>See Prices in Your State</span>
+                  <ArrowCircle />
+                </LimeButton>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* 3. Core Feature: Interactive Malaysia State Price Map */}
-      <MalaysiaMap onVerifyBatchClick={() => setIsVerifyModalOpen(true)} />
+          {/* Bento Grid Row (Matches the 4-column card row in the reference) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Bento Card 1: Farmer Photo */}
+            <div className="relative h-64 rounded-[28px] overflow-hidden shadow-sm border border-black/5 group">
+              <Image
+                src="/images/bario-farmer.jpg"
+                alt="Kelabit farmer in Pa' Dalih, Bario"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-white text-sm font-bold">
+                Pa&apos; Dalih &amp; Bario Asal
+              </div>
+            </div>
 
-      {/* 4. Price Transparency Journey: Where value is added */}
-      <section className="py-14 border-t border-border/60 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mb-10">
-            <span className="text-xs font-mono font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block mb-1">
-              End-to-End Price Visibility
-            </span>
-            <h3 className="text-2xl sm:text-3xl font-serif font-medium tracking-tight text-foreground">
-              Deconstructing the Price of Grade A1 Bario Rice
-            </h3>
-            <p className="text-sm text-muted-foreground mt-2">
-              Unlike commercial commodity rice, Bario specialty rice is exempt
-              from statutory price controls. We make the distribution trail
-              transparent to prevent opportunistic retail price gouging.
+            {/* Bento Card 2: Stat Card 1 */}
+            <div className="h-64 rounded-[28px] bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 p-6 flex flex-col justify-between shadow-sm">
+              <div className="text-xs font-mono font-semibold uppercase tracking-wider text-black/50 dark:text-white/50">
+                Guaranteed Farmgate
+              </div>
+              <div>
+                <div className="text-4xl sm:text-5xl font-heading font-extrabold text-[#0C2317] dark:text-white tracking-tight">
+                  RM 15.50
+                  <span className="text-sm font-normal text-black/50 dark:text-white/50 ml-1">
+                    /kg
+                  </span>
+                </div>
+                <p className="text-xs text-black/70 dark:text-white/70 mt-2 leading-relaxed">
+                  Realised direct payout to smallholders, preventing middleman
+                  price erosion.
+                </p>
+              </div>
+              <div className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-400">
+                +25-40% over the old middleman route
+              </div>
+            </div>
+
+            {/* Bento Card 3: Photo of Grains in Hands */}
+            <div className="relative h-64 rounded-[28px] overflow-hidden shadow-sm border border-black/5 group">
+              <Image
+                src="/images/bario-grains.jpg"
+                alt="Raw Bario rice grains, Grade A1"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-white text-sm font-bold">
+                Grade A1: whole grain, low moisture
+              </div>
+            </div>
+
+            {/* Bento Card 4: Solid Lime Green Accent Card */}
+            <div className="h-64 rounded-[28px] bg-[#D4F63D] border border-black/10 p-6 flex flex-col justify-between shadow-sm text-black">
+              <div className="text-xs font-mono font-bold uppercase tracking-wider text-black/70">
+                One Farmer, One Code
+              </div>
+              <div>
+                <div className="text-4xl sm:text-5xl font-heading font-extrabold tracking-tight text-black">
+                  100%
+                </div>
+                <p className="text-xs text-black/85 font-medium mt-2 leading-relaxed">
+                  Every certified farmer above 1,100m gets a permanent ID.
+                  Bags carry it. Nobody can fake it or resell it.
+                </p>
+              </div>
+              <div className="text-[11px] font-bold text-black/90">
+                Impossible to counterfeit
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* 3. CORE MAP FEATURE ("Making Farming Easier and Better" Style)            */}
+        {/* ========================================================================= */}
+        <MalaysiaMap onVerifyBatchClick={() => setIsVerifyModalOpen(true)} />
+
+        {/* ========================================================================= */}
+        {/* 4. VALUE CHAIN JOURNEY ("Farming Smarter Starts Here" Style)              */}
+        {/* ========================================================================= */}
+        <section
+          id="journey"
+          className="space-y-6 pt-4 max-w-7xl mx-auto px-4 lg:px-0"
+        >
+          <div className="max-w-[65ch] space-y-3">
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold tracking-tight text-[#0C2317] dark:text-white">
+              From Bario Mill to KL Shelf — Every Ringgit Accounted For
+            </h2>
+            <p className="text-xs sm:text-sm text-black/70 dark:text-white/70">
+              Bario rice sits outside government price controls. So we track
+              every markup ourselves — mill, freight, retail — and flag any
+              shelf that overcharges.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Step 1 */}
-            <div className="bg-card border border-border/80 p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground font-mono border-b border-border/50 pb-2 mb-4">
-                  <span>STAGE 01</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                    100% PRODUCER VALUE
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Left: Collage Photos */}
+            <div className="lg:col-span-5 grid grid-cols-2 gap-4">
+              <div className="relative rounded-[28px] overflow-hidden min-h-65 border border-black/5 shadow-xs">
+                <Image
+                  src="/images/bario-terrace.jpg"
+                  alt="Highland terraces, origin of the harvest"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+
+              <div className="relative rounded-[28px] overflow-hidden min-h-65 border border-black/5 shadow-xs">
+                <Image
+                  src="/images/bario-grains.jpg"
+                  alt="Lab-audited Bario rice grains"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Right: 3 Step Action Rows (Matching right column in reference) */}
+            <div className="lg:col-span-7 flex flex-col justify-between gap-3">
+              {/* Row 1 */}
+              <div className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 p-5 rounded-[28px] flex items-center justify-between gap-4 shadow-sm hover:border-[#0C2317] dark:hover:border-white/30 transition-all group">
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                    Guaranteed Base
                   </span>
+                  <h4 className="text-base sm:text-lg font-heading font-bold text-[#0C2317] dark:text-white mt-1">
+                    Bario Highland Farmgate Mill
+                  </h4>
+                  <p className="text-xs text-black/60 dark:text-white/60 mt-0.5">
+                    Cooperative payout to Ruben Kalang and registered
+                    smallholders.
+                  </p>
                 </div>
-                <div className="size-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-800 dark:text-emerald-300 mb-3">
-                  <Plant weight="fill" className="size-5" />
-                </div>
-                <h4 className="text-lg font-serif font-medium text-foreground">
-                  Highland Farmgate
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  Collected directly from farmer cooperative mills in Bario Asal
-                  Lembaa and Pa’ Dalih. Smallholders are guaranteed a base
-                  price that reflects artisan hand-harvesting.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-border/50 flex items-baseline justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Co-op Payout
-                </span>
-                <span className="font-mono text-xl font-semibold text-foreground">
-                  RM 15.50<span className="text-xs font-normal">/kg</span>
-                </span>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="bg-card border border-border/80 p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground font-mono border-b border-border/50 pb-2 mb-4">
-                  <span>STAGE 02</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                    +12.9% DISTRIBUTION
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="font-mono text-lg sm:text-xl font-bold text-[#0C2317] dark:text-white">
+                    RM 15.50/kg
                   </span>
+                  <ArrowCircle
+                    size="size-8"
+                    iconSize="size-4"
+                    variant="light"
+                  />
                 </div>
-                <div className="size-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-700 dark:text-amber-300 mb-3">
-                  <ArrowsLeftRight className="size-5" />
-                </div>
-                <h4 className="text-lg font-serif font-medium text-foreground">
-                  Logistics & Lab Audit
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  Highland turboprop / 4WD transport to Miri/Kuching hubs, batch
-                  moisture and grain integrity laboratory audit, tamper-evident
-                  bagging with serialised QR codes.
-                </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-border/50 flex items-baseline justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Wholesale Drop
-                </span>
-                <span className="font-mono text-xl font-semibold text-foreground">
-                  RM 17.50<span className="text-xs font-normal">/kg</span>
-                </span>
-              </div>
-            </div>
 
-            {/* Step 3 */}
-            <div className="bg-card border border-border/80 p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground font-mono border-b border-border/50 pb-2 mb-4">
-                  <span>STAGE 03</span>
-                  <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                    +40.0% RETAIL MARGIN
+              {/* Row 2 */}
+              <div className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 p-5 rounded-[28px] flex items-center justify-between gap-4 shadow-sm hover:border-[#0C2317] dark:hover:border-white/30 transition-all group">
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/60">
+                    Freight and Lab Audit
                   </span>
+                  <h4 className="text-base sm:text-lg font-heading font-bold text-[#0C2317] dark:text-white mt-1">
+                    Kuching & Miri Regional Logistics Drop
+                  </h4>
+                  <p className="text-xs text-black/60 dark:text-white/60 mt-0.5">
+                    Moisture analysis, grain integrity audit, and per-bag QR
+                    minting (+12.9%).
+                  </p>
                 </div>
-                <div className="size-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center text-rose-700 dark:text-rose-300 mb-3">
-                  <Scales className="size-5" />
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="font-mono text-lg sm:text-xl font-bold text-[#0C2317] dark:text-white">
+                    RM 17.50/kg
+                  </span>
+                  <ArrowCircle
+                    size="size-8"
+                    iconSize="size-4"
+                    variant="light"
+                  />
                 </div>
-                <h4 className="text-lg font-serif font-medium text-foreground">
-                  Peninsula Retail Shelf
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  Air freight to Klang Valley / Penang / Johor, store shelving,
-                  and verified merchandising rights. Any price exceeding RM28/kg
-                  is flagged for potential counterfeit adulteration.
-                </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-border/50 flex items-baseline justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Verified Retail Price
+
+              {/* Row 3 */}
+              <div className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 p-5 rounded-[28px] flex items-center justify-between gap-4 shadow-sm hover:border-[#0C2317] dark:hover:border-white/30 transition-all group">
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-800/60">
+                    Certified Retail
+                  </span>
+                  <h4 className="text-base sm:text-lg font-heading font-bold text-[#0C2317] dark:text-white mt-1">
+                    Peninsula Supermarket Shelves (KL / JB)
+                  </h4>
+                  <p className="text-xs text-black/60 dark:text-white/60 mt-0.5">
+                    Air freight, verified merchandising, retail margin. Any
+                    shelf exceeding RM28/kg is flagged.
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="font-mono text-lg sm:text-xl font-bold text-[#0C2317] dark:text-white">
+                    RM 24.50/kg
+                  </span>
+                  <ArrowCircle
+                    size="size-8"
+                    iconSize="size-4"
+                    variant="light"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* 5. FARMER TESTIMONIAL CARD ("What Farmers Are Saying" Style)              */}
+        {/* ========================================================================= */}
+        <section
+          id="testimonials"
+          className="pt-4 max-w-7xl mx-auto px-4 lg:px-0"
+        >
+          <div className="bg-[#0C2317] text-white rounded-[36px] p-8 sm:p-12 border border-white/10 shadow-2xl relative overflow-hidden">
+            {/* Subtle background contour wave */}
+            <div className="absolute right-0 top-0 w-96 h-96 bg-linear-to-bl from-white/5 to-transparent rounded-full pointer-events-none" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+              {/* Quote text */}
+              <div className="lg:col-span-8 space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#D4F63D] text-xs font-mono font-bold border border-white/10">
+                  <span>Producer Testimony</span>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold text-white tracking-tight leading-snug">
+                  “Buyers in KL scan the bag and see my name. My family’s
+                  name. Last harvest we got{" "}
+                  <span className="text-[#D4F63D] underline decoration-[#D4F63D]/40">
+                    40% more
+                  </span>{" "}
+                  for the same rice we used to sell wholesale.”
+                </h3>
+
+                <div>
+                  <div className="font-bold text-base text-white">
+                    Ruben Kalang & Family
+                  </div>
+                  <div className="text-xs text-[#D4F63D] font-mono">
+                    Producer SBT #BAR-402, Bario Asal Lembaa (1,180m)
+                  </div>
+                </div>
+              </div>
+
+              {/* Farmer photo card */}
+              <div className="lg:col-span-4 flex flex-col items-center lg:items-end gap-2">
+                <div className="relative w-64 h-80 rounded-[28px] overflow-hidden border-2 border-[#D4F63D] shadow-2xl">
+                  <Image
+                    src="/images/bario-farmer.jpg"
+                    alt="Ruben Kalang, farmer since 2015"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <span className="text-[11px] text-white/60 font-mono">
+                  Ruben Kalang, farming since 2015
                 </span>
-                <span className="font-mono text-xl font-semibold text-foreground">
-                  RM 24.50<span className="text-xs font-normal">/kg</span>
-                </span>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 5. Minimalist Proof Pillars */}
-      <section className="py-16 border-t border-border/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="space-y-3">
-              <div className="size-10 rounded-xl bg-muted/80 flex items-center justify-center text-foreground">
-                <ShieldCheck weight="fill" className="size-5" />
-              </div>
-              <h4 className="text-lg font-serif font-medium text-foreground">
-                Non-Transferable Soulbound ID
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Each Kelabit smallholder holds a permanent Soulbound certificate
-                bound to government KYC and farm GPS elevation (≥1,100m).
-                Certificates cannot be traded, resold, or detached.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="size-10 rounded-xl bg-muted/80 flex items-center justify-center text-foreground">
-                <Certificate weight="fill" className="size-5" />
-              </div>
-              <h4 className="text-lg font-serif font-medium text-foreground">
-                Independent Quality Grading
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                No self-declared labels. Every batch is graded A1 (&lt;5%
-                broken grain), A2, or B by accredited Sarawak laboratories.
-                Full moisture analysis reports are immutably anchored.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="size-10 rounded-xl bg-muted/80 flex items-center justify-center text-foreground">
-                <CheckCircle weight="fill" className="size-5" />
-              </div>
-              <h4 className="text-lg font-serif font-medium text-foreground">
-                Built for Older Consumers
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                No crypto jargon, no app download, no wallet setup. Point any
-                smartphone camera at the bag QR code to see verified origin and
-                price history in under 2 seconds.
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Demo Verification Trigger Banner */}
-          <div className="mt-12 bg-card border border-border/80 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs">
-            <div className="flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-foreground text-background flex items-center justify-center shrink-0">
-                <QrCode className="size-8" />
-              </div>
-              <div>
-                <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold block">
-                  Interactive Demo
-                </span>
-                <h4 className="text-xl font-serif font-medium text-foreground mt-0.5">
-                  Experience the In-Store Consumer Verification Page
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Preview how Ruben Kalang’s Batch #2026-11-001 appears when
-                  scanned in a supermarket aisle.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsVerifyModalOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-all shrink-0 cursor-pointer shadow-xs"
-            >
-              <span>View Sample Certificate</span>
-              <ArrowUpRight className="size-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. Minimalist Footer */}
-      <footer className="mt-auto border-t border-border/60 py-8 bg-muted/30 text-xs text-muted-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Plant weight="fill" className="size-4 text-emerald-600" />
-            <span className="font-serif font-medium text-foreground">
-              Bario Seeker
-            </span>
-            <span>— Canonical Domain: barioseeker.my</span>
-          </div>
-
-          <div className="flex items-center gap-6 text-[11px]">
-            <span>DOA Sarawak Surveillance Partner</span>
-            <span>•</span>
-            <span>PDPA 2010 Compliant</span>
-            <span>•</span>
-            <span>Exempt from Paddy and Rice Control Act 1994</span>
-          </div>
-        </div>
-      </footer>
+        {/* ========================================================================= */}
+        {/* 6. MINIMALIST FOOTER                                                      */}
+        {/* ========================================================================= */}
+        <Footer />
+      </div>
 
       {/* Batch Verification Modal */}
       <BatchVerifyModal
