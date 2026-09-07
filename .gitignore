@@ -56,3 +56,6 @@ next-env.d.ts
 id.json
 
 docs
+
+# ...but the example is useful to a clone
+!.env.example
