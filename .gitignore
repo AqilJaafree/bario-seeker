@@ -54,3 +54,5 @@ next-env.d.ts
 *-keypair.json
 *.so
 id.json
+
+docs
