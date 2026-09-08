@@ -71,6 +71,14 @@ export interface BatchView {
   farmLon: number;
   farmElevationM: number;
   producerJoinedAt: number;
+  /**
+   * The producer's quantity-weighted score across every batch, in stars.
+   * Null when nothing they grew has been rated yet.
+   *
+   * There is no producer-level review *count* on chain — only a weight in kg —
+   * so the verify page shows the batch's own review count beside this.
+   */
+  producerRating: number | null;
 
   /** From the Audit checkpoint, when one exists. */
   auditDate: number | null;
@@ -86,6 +94,11 @@ export interface BatchView {
    */
   brokenGrainPct: null;
   moisturePct: null;
+
+  /** Shelf price, only once a Retail stop actually exists. */
+  retailPriceSen: number | null;
+  /** Derived: total kg divided across the bags. */
+  bagSizeKg: number;
 
   journey: StopView[];
   scans: ScanView[];

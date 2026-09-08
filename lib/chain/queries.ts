@@ -24,6 +24,63 @@ import type { BatchSummary, BatchView, ScanView, StopView } from "./types";
 
 const secondsToMs = (bn: { toNumber(): number }) => bn.toNumber() * 1000;
 
+/**
+ * Retry a read that the RPC throttled.
+ *
+ * The public devnet endpoint rate-limits by IP, and serverless functions share
+ * addresses, so 429s arrive in bursts under load. Without this a throttled read
+ * surfaces as "could not check this batch", which reads to a shopper as though
+ * the bag might be fake — the one thing this page must never say by accident.
+ */
+async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  let delay = 250;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const message = String((error as Error)?.message ?? error);
+      const throttled = /429|Too Many Requests|rate/i.test(message);
+      if (!throttled || attempt >= 4) throw error;
+      console.warn(`rpc throttled on ${label}, retrying in ${delay}ms`);
+      await new Promise((r) => setTimeout(r, delay));
+      delay *= 2;
+    }
+  }
+}
+
+/**
+ * batch code -> batch address, cached briefly.
+ *
+ * A batch PDA is seeded by (producer, code), so resolving a printed code means
+ * scanning every batch account — a `getProgramAccounts` call heavy enough that
+ * doing it per page view is what triggers the throttling above. QR codes carry
+ * the address and skip this entirely; the cache is for people typing the code
+ * off a bag.
+ */
+const CODE_INDEX_TTL_MS = 60_000;
+let codeIndex: { at: number; map: Map<string, string> } | null = null;
+
+async function resolveCode(code: string): Promise<PublicKey | null> {
+  const key = code.trim().toLowerCase();
+  const fresh = codeIndex && Date.now() - codeIndex.at < CODE_INDEX_TTL_MS;
+
+  if (fresh) {
+    const hit = codeIndex!.map.get(key);
+    if (hit) return new PublicKey(hit);
+  }
+
+  const all = await withRetry("batch.all", () => getProgram().account.batch.all());
+  codeIndex = {
+    at: Date.now(),
+    map: new Map(
+      all.map((b) => [b.account.batchCode.toLowerCase(), b.publicKey.toBase58()])
+    ),
+  };
+
+  const found = codeIndex.map.get(key);
+  return found ? new PublicKey(found) : null;
+}
+
 /** Resolve registered actor names so the UI can say who recorded a stop. */
 async function actorNames(keys: PublicKey[]): Promise<Map<string, string>> {
   const program = getProgram();
@@ -42,12 +99,39 @@ async function actorNames(keys: PublicKey[]): Promise<Map<string, string>> {
   return names;
 }
 
+/**
+ * Assembled certificates, cached briefly.
+ *
+ * Reading one costs about five RPC round trips — the batch, its producer, the
+ * journey, the scans, and the actor names. Against the public devnet endpoint
+ * that is enough to trigger rate limiting under quite light load, which pushed
+ * the p90 past sixteen seconds in testing.
+ *
+ * A short TTL is honest here rather than merely convenient: checkpoints are
+ * append-only and a grade changes at most once per audit, so a certificate is
+ * stale by seconds at worst. It matches the s-maxage already set on /api/*.
+ */
+const BATCH_TTL_MS = 30_000;
+const batchCache = new Map<string, { at: number; value: BatchView | null }>();
+
 /** Load one batch and its whole journey. Returns null if the batch does not exist. */
 export async function loadBatch(batchPda: PublicKey): Promise<BatchView | null> {
+  const cacheKey = batchPda.toBase58();
+  const cached = batchCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < BATCH_TTL_MS) return cached.value;
+
+  const value = await loadBatchUncached(batchPda);
+  batchCache.set(cacheKey, { at: Date.now(), value });
+  return value;
+}
+
+async function loadBatchUncached(batchPda: PublicKey): Promise<BatchView | null> {
   const program = getProgram();
   const pda = pdas(program.programId);
 
-  const batch = await program.account.batch.fetchNullable(batchPda);
+  const batch = await withRetry("batch.fetch", () =>
+    program.account.batch.fetchNullable(batchPda)
+  );
   if (!batch) return null;
 
   // Checkpoint PDAs derive from the batch address alone, so the producer read
@@ -113,6 +197,7 @@ export async function loadBatch(batchPda: PublicKey): Promise<BatchView | null> 
     }));
 
   const audit = [...journey].reverse().find((s) => s.kind === "audit") ?? null;
+  const retail = [...journey].reverse().find((s) => s.kind === "retail") ?? null;
   const farm = journey.find((s) => s.kind === "farm") ?? null;
 
   // The program labels checkpoint #0 as "<producer name>, Bario", which reads
@@ -154,6 +239,11 @@ export async function loadBatch(batchPda: PublicKey): Promise<BatchView | null> 
     farmLon: producer.farmLon,
     farmElevationM: producer.farmElevationM,
     producerJoinedAt: secondsToMs(producer.joinedAt),
+    producerRating: producer.ratingWeight.isZero()
+      ? null
+      : Math.round(
+          (producer.ratingSum.toNumber() / producer.ratingWeight.toNumber()) * 10
+        ) / 10,
 
     auditDate: audit?.timestamp ?? null,
     auditorOrg: audit?.actorName ?? null,
@@ -163,6 +253,9 @@ export async function loadBatch(batchPda: PublicKey): Promise<BatchView | null> 
     // Deliberately null — see the note in types.ts.
     brokenGrainPct: null,
     moisturePct: null,
+
+    retailPriceSen: retail && retail.priceSen > 0 ? retail.priceSen : null,
+    bagSizeKg: batch.bagCount > 0 ? Math.round(batch.quantityKg / batch.bagCount) : 0,
 
     journey,
     scans,
@@ -250,11 +343,8 @@ export async function listBatches(): Promise<BatchSummary[]> {
  * the code printed on the bag.
  */
 export async function loadBatchByCode(code: string): Promise<BatchView | null> {
-  const program = getProgram();
-  const match = (await program.account.batch.all()).find(
-    (b) => b.account.batchCode.toLowerCase() === code.trim().toLowerCase()
-  );
-  return match ? loadBatch(match.publicKey) : null;
+  const address = await resolveCode(code);
+  return address ? loadBatch(address) : null;
 }
 
 /** Accepts either a batch address or a printed batch code. */
