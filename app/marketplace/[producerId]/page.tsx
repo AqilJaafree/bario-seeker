@@ -1,46 +1,76 @@
-"use client";
-
-import { useState } from "react";
-import { useParams } from "next/navigation";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
-import { LimeButton } from "@/components/ui/lime-button";
-import { GradeBadge } from "@/components/marketplace/grade-badge";
-import { getProducerById } from "@/lib/data/producers";
 import {
-  StarIcon,
+  ArrowLeftIcon,
+  ArrowSquareOutIcon,
   MapPinIcon,
   ShieldCheckIcon,
-  ArrowLeftIcon,
-  CertificateIcon,
-  MinusIcon,
-  PlusIcon,
-  CheckCircleIcon,
-} from "@phosphor-icons/react";
+  StarIcon,
+} from "@phosphor-icons/react/dist/ssr";
 
+import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
+import { BatchPurchase } from "@/components/marketplace/batch-purchase";
+import { toDeg } from "@/lib/chain/bario";
+import { loadProducer } from "@/lib/chain/queries";
+import type { ProducerView } from "@/lib/chain/types";
+
+/**
+ * A producer, read from the chain and keyed by their Producer PDA.
+ *
+ * Deliberately generic imagery: the ledger holds a name, coordinates, an
+ * elevation and a join date — no portrait — and captioning a stock photograph
+ * with a real farmer's name would be the kind of small dishonesty this whole
+ * product exists to argue against.
+ */
 const GALLERY_IMAGES = [
-  "/images/bario-grains.jpg",
   "/images/bario-terrace.jpg",
+  "/images/bario-grains.jpg",
   "/images/bario-farmer.jpg",
 ];
 
-export default function ProducerDetailPage() {
-  const params = useParams<{ producerId: string }>();
-  const producer = getProducerById(params.producerId);
-  const [selectedBatchId, setSelectedBatchId] = useState(
-    producer?.batches[0]?.batchId,
-  );
-  const [quantity, setQuantity] = useState(1);
-  const [orderPlaced, setOrderPlaced] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
+const explorerUrl = (address: string, cluster: string) =>
+  `https://explorer.solana.com/address/${address}` +
+  (cluster === "mainnet-beta" ? "" : `?cluster=${cluster}`);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ producerId: string }>;
+}): Promise<Metadata> {
+  const { producerId } = await params;
+  const producer = await loadProducer(producerId).catch(() => null);
+  return producer
+    ? {
+        title: `${producer.name} — Bario Seeker`,
+        description: `${producer.name} farms at ${producer.elevationM} m in the Kelabit Highlands, with ${producer.batchCount} certified harvests on-chain.`,
+      }
+    : { title: "Producer not found — Bario Seeker" };
+}
+
+export default async function ProducerDetailPage({
+  params,
+}: {
+  params: Promise<{ producerId: string }>;
+}) {
+  const { producerId } = await params;
+
+  let producer: ProducerView | null = null;
+  let unreachable = false;
+  try {
+    producer = await loadProducer(producerId);
+  } catch {
+    unreachable = true;
+  }
 
   if (!producer) {
     return (
-      <div className="min-h-screen bg-[#F5F6F1] dark:bg-[#111813] text-[#111813] dark:text-[#F5F6F1] flex flex-col items-center justify-center gap-4 font-sans">
-        <p className="text-sm text-black/60 dark:text-white/60">
-          Producer not found.
+      <div className="min-h-screen bg-[#F5F6F1] dark:bg-[#111813] text-[#111813] dark:text-[#F5F6F1] flex flex-col items-center justify-center gap-4 font-sans px-6 text-center">
+        <p className="text-sm text-black/60 dark:text-white/60 max-w-md">
+          {unreachable
+            ? "Could not reach the network to load this producer. Try again in a moment."
+            : "No producer certificate exists at that address."}
         </p>
         <Link
           href="/marketplace"
@@ -52,42 +82,16 @@ export default function ProducerDetailPage() {
     );
   }
 
-  const selectedBatch =
-    producer.batches.find((b) => b.batchId === selectedBatchId) ??
-    producer.batches[0];
-
-  const gallery = [producer.photo, ...GALLERY_IMAGES];
-  const pricePerBag = selectedBatch.sellPriceRmKg * selectedBatch.bagSizeKg;
-  const maxQuantity = Math.min(selectedBatch.quantityBags, 20);
-
-  const specs = [
-    { label: "Grade", value: `Grade ${selectedBatch.grade}` },
-    { label: "Harvested", value: selectedBatch.harvestDate },
-    {
-      label: "Audited",
-      value: `${selectedBatch.auditDate} by ${selectedBatch.auditorOrg}`,
-    },
-    { label: "Broken Grain", value: `${selectedBatch.brokenGrainPct}%` },
-    { label: "Moisture", value: `${selectedBatch.moisturePct}%` },
-    { label: "Bag Size", value: `${selectedBatch.bagSizeKg}kg` },
-    { label: "In Stock", value: `${selectedBatch.quantityBags} bags` },
-    { label: "Certificate", value: selectedBatch.labCertificateId },
-  ];
-
-  const handleSelectBatch = (batchId: string) => {
-    setSelectedBatchId(batchId);
-    setQuantity(1);
-    setOrderPlaced(false);
-    setActiveImage(0);
-  };
-
-  const handleBuy = () => {
-    setOrderPlaced(true);
-  };
+  const initials = producer.name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("");
+  const since = new Date(producer.joinedAt).getFullYear();
 
   return (
     <div className="min-h-screen bg-[#F5F6F1] dark:bg-[#111813] text-[#111813] dark:text-[#F5F6F1] flex flex-col font-sans selection:bg-[#D4F63D] selection:text-black">
-      <div className="w-full mx-auto space-y-12 px-4 lg:px-0 max-w-7xl">
+      <div className="w-full mx-auto space-y-10 px-4 lg:px-0 max-w-7xl">
         <div className="pt-6">
           <Navbar />
         </div>
@@ -97,232 +101,175 @@ export default function ProducerDetailPage() {
           className="inline-flex items-center gap-1.5 text-sm font-medium text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
         >
           <ArrowLeftIcon className="size-4" />
-          Back to Marketplace
+          All producers
         </Link>
 
-        {/* Product */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+        <section className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Gallery */}
-          <div className="flex flex-col gap-3">
-            <div className="relative rounded-[28px] overflow-hidden aspect-square border border-black/10 dark:border-white/10 bg-white dark:bg-white/5">
+          <div className="space-y-3">
+            <div className="relative aspect-4/3 rounded-[28px] overflow-hidden bg-[#0C2317]">
               <Image
-                src={gallery[activeImage]}
-                alt={producer.name}
+                src={GALLERY_IMAGES[0]}
+                alt="Bario highland rice terraces"
                 fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"
               />
-              <GradeBadge grade={selectedBatch.grade} className="absolute top-4 left-4" />
-              <span className="absolute top-4 right-4 inline-flex items-center gap-1 text-xs font-semibold text-white bg-emerald-700/90 backdrop-blur px-2.5 py-1 rounded-full">
-                <ShieldCheckIcon weight="fill" className="size-3.5" />
-                Verified
-              </span>
             </div>
-
-            <div className="grid grid-cols-4 gap-3">
-              {gallery.map((src, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveImage(idx)}
-                  className={`relative rounded-2xl overflow-hidden aspect-square border-2 transition-colors cursor-pointer ${
-                    idx === activeImage
-                      ? "border-[#0C2317] dark:border-[#D4F63D]"
-                      : "border-transparent hover:border-black/20 dark:hover:border-white/20"
-                  }`}
+            <div className="grid grid-cols-3 gap-3">
+              {GALLERY_IMAGES.map((src) => (
+                <div
+                  key={src}
+                  className="relative aspect-square rounded-2xl overflow-hidden"
                 >
-                  <Image src={src} alt="" fill className="object-cover" />
-                </button>
+                  <Image
+                    src={src}
+                    alt="Bario rice"
+                    fill
+                    sizes="33vw"
+                    className="object-cover"
+                  />
+                </div>
               ))}
             </div>
+            <p className="text-[11px] text-black/45 dark:text-white/45">
+              Photographs of the Bario highlands. The ledger does not hold
+              producer portraits.
+            </p>
           </div>
 
           {/* Info */}
-          <div className="flex flex-col gap-6 lg:pt-2">
-            <Link
-              href={`/marketplace/${producer.id}`}
-              className="flex items-center gap-2 text-sm text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white w-fit"
-            >
-              <span className="font-semibold text-[#0C2317] dark:text-white">
-                {producer.name}
-              </span>
-              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                <StarIcon weight="fill" className="size-3.5" />
-                {producer.rating} ({producer.reviewCount})
-              </span>
-            </Link>
-
-            <div>
-              <h1 className="text-4xl sm:text-5xl font-heading font-bold tracking-tight text-[#0C2317] dark:text-white leading-[1.05]">
-                Bario Highland Rice
-              </h1>
-              <div className="text-sm font-mono text-black/40 dark:text-white/40 mt-2">
-                Batch #{selectedBatch.batchId} &middot; Grade{" "}
-                {selectedBatch.grade}
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="size-14 rounded-2xl bg-[#0C2317] text-[#D4F63D] flex items-center justify-center shrink-0 font-heading text-lg">
+                {initials}
               </div>
-            </div>
-
-            {/* Price */}
-            <div className="flex items-baseline gap-3">
-              <span className="text-4xl sm:text-5xl font-mono font-extrabold text-[#0C2317] dark:text-white">
-                RM {pricePerBag.toFixed(2)}
-              </span>
-              <span className="text-base text-black/50 dark:text-white/50">
-                / {selectedBatch.bagSizeKg}kg bag
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-sm text-black/60 dark:text-white/60">
-              <MapPinIcon className="size-4" />
-              {producer.location}
-            </div>
-
-            <p className="text-base text-black/70 dark:text-white/70 leading-relaxed max-w-[60ch]">
-              {producer.bio}
-            </p>
-
-            {/* Batch (variant) selector */}
-            {producer.batches.length > 1 && (
-              <div>
-                <div className="text-xs uppercase tracking-wider text-black/50 dark:text-white/50 font-semibold mb-2">
-                  Harvest Batch
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {producer.batches.map((batch) => (
-                    <button
-                      key={batch.batchId}
-                      onClick={() => handleSelectBatch(batch.batchId)}
-                      className={`text-sm font-mono font-semibold px-4 py-2 rounded-full border transition-all cursor-pointer ${
-                        batch.batchId === selectedBatch.batchId
-                          ? "bg-[#0C2317] text-white border-[#0C2317] dark:bg-[#D4F63D] dark:text-black dark:border-[#D4F63D]"
-                          : "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-[#0C2317] dark:hover:border-white/30"
-                      }`}
-                    >
-                      {batch.batchId} &middot; {batch.grade}
-                    </button>
-                  ))}
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-heading font-bold tracking-tight text-[#0C2317] dark:text-white">
+                  {producer.name}
+                </h1>
+                <p className="text-sm text-black/60 dark:text-white/60 flex items-center gap-1.5 mt-1">
+                  <MapPinIcon className="size-4 shrink-0" />
+                  {producer.location} · {producer.elevationM} m
+                </p>
+                <div className="flex items-center gap-3 mt-2 text-sm">
+                  {producer.rating !== null ? (
+                    <span className="inline-flex items-center gap-1">
+                      <StarIcon weight="fill" className="size-4 text-amber-500" />
+                      {producer.rating.toFixed(1)}
+                      <span className="text-black/50 dark:text-white/50">
+                        ({producer.reviewCount})
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-black/50 dark:text-white/50 text-xs">
+                      Not yet rated
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                    <ShieldCheckIcon weight="fill" className="size-3.5" />
+                    Verified producer
+                  </span>
                 </div>
               </div>
-            )}
-
-            {/* Specs */}
-            <dl className="border-t border-black/10 dark:border-white/10 pt-5 space-y-3.5">
-              {specs.map((spec) => (
-                <div
-                  key={spec.label}
-                  className="flex items-baseline justify-between gap-4"
-                >
-                  <dt className="text-xs uppercase tracking-wider text-black/50 dark:text-white/50 font-semibold shrink-0">
-                    {spec.label}
-                  </dt>
-                  <dd className="text-sm font-medium text-[#0C2317] dark:text-white text-right">
-                    {spec.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-
-            <Link
-              href={`/verify/${selectedBatch.batchId}`}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0C2317] dark:text-[#D4F63D] hover:underline w-fit"
-            >
-              <CertificateIcon className="size-4" />
-              View Certificate
-            </Link>
-
-            {/* Quantity + Buy */}
-            <div className="flex items-center gap-3 pt-2">
-              <div className="inline-flex items-center border border-black/10 dark:border-white/10 rounded-full bg-white dark:bg-white/5 w-fit shrink-0">
-                <button
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  aria-label="Decrease quantity"
-                  className="size-11 flex items-center justify-center cursor-pointer text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
-                >
-                  <MinusIcon className="size-4" />
-                </button>
-                <span className="w-8 text-center text-base font-mono font-semibold">
-                  {quantity}
-                </span>
-                <button
-                  onClick={() =>
-                    setQuantity((q) => Math.min(maxQuantity, q + 1))
-                  }
-                  aria-label="Increase quantity"
-                  className="size-11 flex items-center justify-center cursor-pointer text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
-                >
-                  <PlusIcon className="size-4" />
-                </button>
-              </div>
-
-              <LimeButton
-                onClick={handleBuy}
-                className="flex-1 justify-center gap-2 text-base px-6 py-3.5"
-              >
-                <span>
-                  Add to Cart &middot; RM {(pricePerBag * quantity).toFixed(2)}
-                </span>
-              </LimeButton>
             </div>
 
-            {orderPlaced && (
-              <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl px-4 py-3">
-                <CheckCircleIcon weight="fill" className="size-4 shrink-0" />
-                Order request sent for {quantity} bag
-                {quantity > 1 ? "s" : ""}. {producer.name} will confirm stock
-                and delivery.
-              </div>
-            )}
+            <BatchPurchase
+              producerName={producer.name}
+              batches={producer.batches}
+            />
           </div>
         </section>
 
-        {/* About the producer */}
-        <section className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-[28px] p-6 sm:p-8 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
-              Producer SBT {producer.sbtId}
-            </span>
-            <span className="text-xs text-black/50 dark:text-white/50">
-              Elevation {producer.elevationMeters}m &middot; Farming since{" "}
-              {producer.joinedYear}
-            </span>
-          </div>
-          <h3 className="text-xl font-heading font-bold text-[#0C2317] dark:text-white">
+        {/* About, assembled from the ledger */}
+        <section className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-[28px] p-6 space-y-4">
+          <h2 className="font-heading font-bold text-lg">
             About {producer.name}
-          </h3>
-          <p className="text-base text-black/70 dark:text-white/70 leading-relaxed max-w-[65ch]">
-            {producer.bio}
+          </h2>
+          <p className="text-sm text-black/70 dark:text-white/70 leading-relaxed max-w-[70ch]">
+            {producer.name} has held a Producer SBT since {since}, issued
+            against a farm at {producer.elevationM} m — above the 1,100 m
+            threshold the program enforces on chain for Bario rice. They have
+            registered {producer.batchCount}{" "}
+            {producer.batchCount === 1 ? "harvest" : "harvests"}, each minted as
+            a certificate inside this producer&apos;s own collection. Neither
+            certificate can be transferred, sold or burned.
           </p>
+          <dl className="grid sm:grid-cols-2 gap-y-2 gap-x-6 text-sm border-t border-black/10 dark:border-white/10 pt-4">
+            <dt className="text-black/50 dark:text-white/50">Farm coordinates</dt>
+            <dd className="sm:text-right font-mono">
+              {toDeg(producer.farmLat).toFixed(4)},{" "}
+              {toDeg(producer.farmLon).toFixed(4)}
+            </dd>
+            <dt className="text-black/50 dark:text-white/50">Producer SBT</dt>
+            <dd className="sm:text-right font-mono truncate">
+              <a
+                href={explorerUrl(producer.producerAsset, producer.cluster)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-emerald-700 dark:text-[#D4F63D] hover:underline"
+              >
+                {producer.producerAsset.slice(0, 8)}…
+                {producer.producerAsset.slice(-8)}
+                <ArrowSquareOutIcon className="size-3" />
+              </a>
+            </dd>
+          </dl>
         </section>
 
         {/* Reviews */}
         <section className="space-y-4 pb-10">
-          <h2 className="text-2xl sm:text-3xl font-heading font-bold tracking-tight text-[#0C2317] dark:text-white">
-            Buyer Reviews
+          <h2 className="font-heading font-bold text-lg">
+            Ratings ({producer.reviewCount})
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {producer.reviews.map((review) => (
-              <div
-                key={review.id}
-                className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-[20px] p-5 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-semibold text-[#0C2317] dark:text-white">
-                    {review.author}
-                  </span>
-                  <span className="flex items-center gap-1 text-sm font-medium text-amber-600 dark:text-amber-400">
-                    <StarIcon weight="fill" className="size-4" />
-                    {review.rating}
-                  </span>
-                </div>
-                <p className="text-sm text-black/70 dark:text-white/70 leading-relaxed">
-                  {review.comment}
-                </p>
-                <div className="text-xs text-black/40 dark:text-white/40">
-                  {review.date}
-                  {review.retailer && ` · ${review.retailer}`}
-                </div>
+          {producer.reviews.length === 0 ? (
+            <p className="text-sm text-black/60 dark:text-white/60">
+              No shopper has rated a harvest from {producer.name} yet.
+            </p>
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {producer.reviews.map((review) => (
+                  <div
+                    key={`${review.batchPda}-${review.reviewer}`}
+                    className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-4 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <StarIcon
+                            key={star}
+                            weight={star <= review.rating ? "fill" : "regular"}
+                            className={`size-3.5 ${
+                              star <= review.rating
+                                ? "text-amber-500"
+                                : "text-black/20 dark:text-white/20"
+                            }`}
+                          />
+                        ))}
+                      </span>
+                      <span className="text-xs text-black/50 dark:text-white/50">
+                        {new Date(review.createdAt).toLocaleDateString("en-MY", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                      {review.reviewer} · batch {review.batchCode}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+              <p className="text-xs text-black/50 dark:text-white/50">
+                The chain records the star rating, who left it and when. Review
+                text is stored off-chain and is not shown here.
+              </p>
+            </>
+          )}
         </section>
 
         <Footer />

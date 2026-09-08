@@ -397,6 +397,7 @@ export default function Home() {
       <BatchVerifyModal
         isOpen={isVerifyModalOpen}
         onClose={() => setIsVerifyModalOpen(false)}
+        initialBatchId={searchInput.trim() || "2026-11-001"}
       />
     </div>
   );
