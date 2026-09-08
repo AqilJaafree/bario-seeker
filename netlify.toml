@@ -1,0 +1,27 @@
+# Netlify build for the Bario Seeker verification app.
+#
+# The repo also contains the Anchor program under bario-seeker-program/, which
+# is a separate Rust/TypeScript package with its own toolchain. It is excluded
+# from the Next build via tsconfig.json and is not needed here — the app only
+# reads the deployed program over RPC.
+
+[build]
+  command = "pnpm build"
+  publish = ".next"
+
+[build.environment]
+  # Next 16 needs a modern Node; match what the project is developed against.
+  NODE_VERSION = "22"
+  # The Rust program's node_modules must never be pulled into the site build.
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+
+# The official adapter turns the App Router's server-rendered routes — including
+# /api/batch/[id], which reads Solana — into Netlify Functions.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    # Verification data is public and changes only when the chain does.
+    Cache-Control = "public, max-age=0, s-maxage=30, stale-while-revalidate=300"

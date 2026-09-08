@@ -18,8 +18,10 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 25_000 },
   reporter: [["list"]],
+  // Point at a deployed URL to run the same suite against Netlify:
+  //   PLAYWRIGHT_BASE_URL=https://bario-seeker.netlify.app pnpm test:e2e
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -32,10 +34,13 @@ export default defineConfig({
     },
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
   ],
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  // Only spin up a dev server when testing locally.
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: "pnpm dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
 });
