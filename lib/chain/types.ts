@@ -127,3 +127,65 @@ export interface BatchSummary {
   stopCount: number;
   scanCount: number;
 }
+
+// ---------------------------------------------------------------------------
+// Producers
+// ---------------------------------------------------------------------------
+
+export interface ProducerBatchView {
+  batchPda: string;
+  batchCode: string;
+  variety: string;
+  grade: GradeKey;
+  gradeLabel: string;
+  isAudited: boolean;
+  harvestDate: number;
+  quantityKg: number;
+  bagCount: number;
+  bagSizeKg: number;
+  farmgatePriceSen: number;
+  /** Shelf price, only once a Retail stop exists. */
+  retailPriceSen: number | null;
+  stopCount: number;
+  scanCount: number;
+  ratingCount: number;
+  ratingAverage: number | null;
+}
+
+export interface ProducerReviewView {
+  batchPda: string;
+  batchCode: string;
+  /** Truncated reviewer address. There are no names on chain. */
+  reviewer: string;
+  rating: number;
+  /**
+   * IPFS CID of the review text. The prose itself is off-chain, so the UI must
+   * not present a comment it does not have.
+   */
+  reviewCid: string;
+  createdAt: number;
+}
+
+export interface ProducerSummary {
+  producerPda: string;
+  producerAsset: string;
+  name: string;
+  location: string;
+  farmLat: number;
+  farmLon: number;
+  elevationM: number;
+  joinedAt: number;
+  batchCount: number;
+  /** Quantity-weighted across every batch, in stars. */
+  rating: number | null;
+  /** Most recent harvest, for the card's headline figures. */
+  latestBatch: ProducerBatchView | null;
+  cluster: string;
+}
+
+export interface ProducerView extends ProducerSummary {
+  batches: ProducerBatchView[];
+  reviews: ProducerReviewView[];
+  /** Reviews across all of this producer's batches. */
+  reviewCount: number;
+}

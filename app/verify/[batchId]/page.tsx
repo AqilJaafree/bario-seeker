@@ -134,11 +134,11 @@ export default async function CertificatePage({
   return shell(
     <div className="max-w-2xl mx-auto w-full space-y-8">
       <Link
-        href="/marketplace"
+        href={`/marketplace/${batch.producerPda}`}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
       >
         <ArrowLeftIcon className="size-4" />
-        All producers
+        Back to {batch.producerName}
       </Link>
 
       {/* The verdict, above the fold. A batch can be genuine but ungraded, and

@@ -20,7 +20,16 @@ import {
   variant,
 } from "./bario";
 import { CLUSTER, getProgram } from "./program";
-import type { BatchSummary, BatchView, ScanView, StopView } from "./types";
+import type {
+  BatchSummary,
+  BatchView,
+  ProducerBatchView,
+  ProducerReviewView,
+  ProducerSummary,
+  ProducerView,
+  ScanView,
+  StopView,
+} from "./types";
 
 const secondsToMs = (bn: { toNumber(): number }) => bn.toNumber() * 1000;
 
@@ -66,7 +75,12 @@ async function resolveCode(code: string): Promise<PublicKey | null> {
 
   if (fresh) {
     const hit = codeIndex!.map.get(key);
-    if (hit) return new PublicKey(hit);
+    // Trust a fresh index for misses too. Falling through to a rescan on every
+    // unknown code means the counterfeit case — the one most likely to be
+    // hammered — triggers a full getProgramAccounts scan per request, which is
+    // exactly backwards. The cost is that a batch registered in the last minute
+    // reads as unknown until the index expires.
+    return hit ? new PublicKey(hit) : null;
   }
 
   const all = await withRetry("batch.all", () => getProgram().account.batch.all());
@@ -355,4 +369,143 @@ export async function loadBatchByAnyId(id: string): Promise<BatchView | null> {
   } catch {
     return loadBatchByCode(trimmed);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Producers
+// ---------------------------------------------------------------------------
+
+const PRODUCER_TTL_MS = 30_000;
+let producerCache: { at: number; value: ProducerView[] } | null = null;
+
+const shortKey = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
+
+/**
+ * Every producer, with their batches and reviews.
+ *
+ * Assembled in three `getProgramAccounts` calls rather than per-producer reads,
+ * because that scan is the expensive part and the whole set is small. Cached on
+ * the same short TTL as certificates — the data is append-only, so it is stale
+ * by seconds at worst.
+ */
+async function loadAllProducers(): Promise<ProducerView[]> {
+  if (producerCache && Date.now() - producerCache.at < PRODUCER_TTL_MS) {
+    return producerCache.value;
+  }
+
+  const program = getProgram();
+  const pda = pdas(program.programId);
+
+  const [producers, batches, reviews] = await Promise.all([
+    withRetry("producer.all", () => program.account.producer.all()),
+    withRetry("batch.all", () => program.account.batch.all()),
+    withRetry("review.all", () => program.account.review.all()),
+  ]);
+
+  // The shelf price lives on the last checkpoint, so read the final stop of
+  // every batch in one batched request rather than one call per batch.
+  const lastStopKeys = batches.map((b) =>
+    pda.checkpoint(b.publicKey, Math.max(0, b.account.checkpointCount - 1))
+  );
+  const lastStops = await withRetry("checkpoint.fetchMultiple", () =>
+    program.account.checkpoint.fetchMultiple(lastStopKeys)
+  );
+
+  const batchViews = new Map<string, ProducerBatchView[]>();
+  const batchCodeByPda = new Map<string, string>();
+
+  batches.forEach(({ publicKey, account }, i) => {
+    const grade = variant<GradeKey>(account.grade);
+    const last = lastStops[i];
+    const isRetail =
+      last && variant<CheckpointKindKey>(last.kind) === "retail" && last.priceSen > 0;
+
+    const view: ProducerBatchView = {
+      batchPda: publicKey.toBase58(),
+      batchCode: account.batchCode,
+      variety: account.variety,
+      grade,
+      gradeLabel: GRADE_LABEL[grade],
+      isAudited: grade !== "pending",
+      harvestDate: secondsToMs(account.harvestDate),
+      quantityKg: account.quantityKg,
+      bagCount: account.bagCount,
+      bagSizeKg:
+        account.bagCount > 0 ? Math.round(account.quantityKg / account.bagCount) : 0,
+      farmgatePriceSen: account.farmgatePriceSen,
+      retailPriceSen: isRetail ? last!.priceSen : null,
+      stopCount: account.checkpointCount,
+      scanCount: account.scanCount,
+      ratingCount: account.ratingCount,
+      ratingAverage:
+        account.ratingCount > 0
+          ? Math.round((account.ratingSum / account.ratingCount) * 10) / 10
+          : null,
+    };
+
+    const key = account.producer.toBase58();
+    batchViews.set(key, [...(batchViews.get(key) ?? []), view]);
+    batchCodeByPda.set(view.batchPda, view.batchCode);
+  });
+
+  const reviewsByBatch = new Map<string, ProducerReviewView[]>();
+  for (const { account } of reviews) {
+    const batchPda = account.batch.toBase58();
+    const view: ProducerReviewView = {
+      batchPda,
+      batchCode: batchCodeByPda.get(batchPda) ?? "",
+      reviewer: shortKey(account.reviewer.toBase58()),
+      rating: account.rating,
+      reviewCid: account.reviewCid,
+      createdAt: secondsToMs(account.createdAt),
+    };
+    reviewsByBatch.set(batchPda, [...(reviewsByBatch.get(batchPda) ?? []), view]);
+  }
+
+  const value = producers.map(({ publicKey, account }) => {
+    const key = publicKey.toBase58();
+    const mine = (batchViews.get(key) ?? []).sort(
+      (a, b) => b.harvestDate - a.harvestDate
+    );
+    const myReviews = mine
+      .flatMap((b) => reviewsByBatch.get(b.batchPda) ?? [])
+      .sort((a, b) => b.createdAt - a.createdAt);
+
+    return {
+      producerPda: key,
+      producerAsset: account.asset.toBase58(),
+      name: account.name,
+      // The chain stores coordinates, not a place name. The farm checkpoint's
+      // label repeats the producer's own name, so the region is the honest
+      // thing to show here.
+      location: "Bario Highlands, Sarawak",
+      farmLat: account.farmLat,
+      farmLon: account.farmLon,
+      elevationM: account.farmElevationM,
+      joinedAt: secondsToMs(account.joinedAt),
+      batchCount: account.batchCount,
+      rating: account.ratingWeight.isZero()
+        ? null
+        : Math.round(
+            (account.ratingSum.toNumber() / account.ratingWeight.toNumber()) * 10
+          ) / 10,
+      latestBatch: mine[0] ?? null,
+      batches: mine,
+      reviews: myReviews,
+      reviewCount: myReviews.length,
+      cluster: CLUSTER,
+    } satisfies ProducerView;
+  });
+
+  producerCache = { at: Date.now(), value };
+  return value;
+}
+
+export async function listProducers(): Promise<ProducerSummary[]> {
+  return (await loadAllProducers()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function loadProducer(producerPda: string): Promise<ProducerView | null> {
+  const all = await loadAllProducers();
+  return all.find((p) => p.producerPda === producerPda) ?? null;
 }
