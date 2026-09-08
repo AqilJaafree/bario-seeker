@@ -5,6 +5,7 @@ import {
   StatePriceData,
   RiceGrade,
   FARMGATE_PRICE_BENCHMARK,
+  getMarkupPct,
 } from "@/lib/data/malaysia-prices";
 import {
   ShieldCheckIcon,
@@ -12,9 +13,10 @@ import {
   TrendUpIcon,
   MapPinIcon,
   StorefrontIcon,
-  ArrowRightIcon,
+  ArrowUpRightIcon,
   SparkleIcon,
 } from "@phosphor-icons/react";
+import { LimeButton } from "@/components/ui/lime-button";
 
 interface StatePriceCardProps {
   stateData: StatePriceData;
@@ -29,173 +31,157 @@ export const StatePriceCard: React.FC<StatePriceCardProps> = ({
 }) => {
   const farmgate = FARMGATE_PRICE_BENCHMARK[activeGrade];
   const shelfPrice = stateData.prices[activeGrade];
-  const deltaRm = (shelfPrice - farmgate).toFixed(2);
-  const deltaPct = (((shelfPrice - farmgate) / farmgate) * 100).toFixed(1);
+  const deltaPct = getMarkupPct(shelfPrice, activeGrade).toFixed(1);
+  const farmerSharePct = ((farmgate / shelfPrice) * 100).toFixed(0);
+  const retailSharePct = (100 - Number(farmerSharePct)).toFixed(0);
 
   return (
-    <div className="bg-card border border-border/80 rounded-2xl p-5 md:p-6 shadow-xs transition-all flex flex-col justify-between">
-      {/* Header */}
-      <div>
-        <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">
-                {stateData.id} • {stateData.region}
+    <div className="bg-[#0e271a] border border-white/10 rounded-[28px] overflow-hidden text-white shadow-xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
+        {/* Column 1: identity & headline price */}
+        <div className="p-6 flex flex-col gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-medium">
+              {stateData.id} &middot; {stateData.region}
+            </span>
+            {stateData.isOrigin && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-black bg-[#D4F63D] px-2.5 py-0.5 rounded-full shadow-xs">
+                <SparkleIcon weight="fill" className="size-3 text-black" />
+                Origin (&ge;1,100m)
               </span>
-              {stateData.isOrigin && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 rounded-full">
-                  <SparkleIcon weight="fill" className="size-3 text-emerald-600" />
-                  Origin (Highlands ≥1,100m)
-                </span>
-              )}
-            </div>
-            <h3 className="text-2xl font-serif tracking-tight font-medium mt-1.5 text-foreground flex items-center gap-2">
-              {stateData.name}
-            </h3>
+            )}
           </div>
 
-          <div className="text-right">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">
-              Grade {activeGrade} Shelf
+          <h3 className="text-2xl font-heading tracking-tight font-bold text-white">
+            {stateData.name}
+          </h3>
+
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium block">
+              Grade {activeGrade} shelf
             </span>
-            <div className="text-2xl font-mono font-semibold tracking-tight text-foreground">
+            <div className="text-3xl font-mono font-bold tracking-tight text-[#D4F63D]">
               RM {shelfPrice.toFixed(2)}
-              <span className="text-xs text-muted-foreground font-normal ml-0.5">
+              <span className="text-xs text-white/60 font-normal ml-1">
                 /kg
               </span>
             </div>
           </div>
-        </div>
 
-        {/* Pricing Comparison Bar */}
-        <div className="my-4 bg-muted/40 border border-border/40 rounded-xl p-3.5">
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="text-muted-foreground flex items-center gap-1">
-              <MapPinIcon className="size-3.5" /> Bario Farmgate Base:
-            </span>
-            <span className="font-mono font-medium text-foreground">
-              RM {farmgate.toFixed(2)}/kg
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground flex items-center gap-1">
-              <TrendUpIcon className="size-3.5 text-amber-600 dark:text-amber-400" /> Distribution Markup:
-            </span>
+          <div className="text-xs text-white/70 flex items-center gap-1.5">
+            <MapPinIcon className="size-3.5 text-white/50" />
+            vs RM {farmgate.toFixed(2)} base &middot;{" "}
             <span
-              className={`font-mono font-semibold ${
-                Number(deltaPct) > 50
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-emerald-600 dark:text-emerald-400"
+              className={`font-mono font-bold ${
+                Number(deltaPct) > 50 ? "text-rose-400" : "text-[#D4F63D]"
               }`}
             >
-              +{deltaPct}% (+RM {deltaRm}/kg)
+              +{deltaPct}%
             </span>
           </div>
 
-          {/* Visual Bar Indicator */}
-          <div className="w-full bg-border/40 h-2 rounded-full mt-3 overflow-hidden flex">
-            <div
-              className="bg-emerald-700 h-full rounded-l-full"
-              style={{ width: `${(farmgate / shelfPrice) * 100}%` }}
-              title="Farmgate Share"
-            />
-            <div
-              className="bg-amber-500 h-full rounded-r-full"
-              style={{
-                width: `${100 - (farmgate / shelfPrice) * 100}%`,
-              }}
-              title="Logistics & Retail Margin"
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-muted-foreground mt-1 font-mono">
-            <span>Producer: {((farmgate / shelfPrice) * 100).toFixed(0)}%</span>
-            <span>Markup: {(100 - (farmgate / shelfPrice) * 100).toFixed(0)}%</span>
+          <div className="flex items-center justify-between pt-3 border-t border-white/10 font-mono text-xs">
+            <span className="text-white/70 flex items-center gap-1.5">
+              <TrendUpIcon className="size-3.5 text-[#D4F63D]" /> Farmer{" "}
+              <strong className="text-[#D4F63D] font-bold">
+                {farmerSharePct}%
+              </strong>
+            </span>
+            <span className="text-white/70">
+              Logistics &amp; retail{" "}
+              <strong className="text-white font-bold">
+                {retailSharePct}%
+              </strong>
+            </span>
           </div>
         </div>
 
-        {/* Grade Breakdown Pill Grid */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {(["A1", "A2", "B"] as RiceGrade[]).map((grade) => {
-            const isSelected = grade === activeGrade;
-            return (
-              <div
-                key={grade}
-                className={`rounded-lg p-2 text-center border transition-all ${
-                  isSelected
-                    ? "bg-foreground text-background border-foreground shadow-xs"
-                    : "bg-muted/30 border-border/50 text-foreground"
-                }`}
-              >
+        {/* Column 2: all grades & notes */}
+        <div className="p-6 flex flex-col gap-4">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-white/60 font-medium block mb-2">
+              All grades
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {(["A1", "A2", "B"] as RiceGrade[]).map((grade) => {
+                const isSelected = grade === activeGrade;
+                return (
+                  <div
+                    key={grade}
+                    className={`rounded-xl p-2.5 text-center border transition-all ${
+                      isSelected
+                        ? "bg-[#D4F63D] text-black border-[#D4F63D] font-bold shadow-md"
+                        : "bg-white/5 border-white/10 text-white/80"
+                    }`}
+                  >
+                    <div
+                      className={`text-[10px] uppercase font-semibold ${
+                        isSelected ? "text-black/80" : "text-white/50"
+                      }`}
+                    >
+                      {grade}
+                    </div>
+                    <div className="font-mono text-sm font-bold mt-0.5">
+                      RM {stateData.prices[grade].toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <p className="text-xs text-white/70 leading-relaxed line-clamp-4">
+            {stateData.notes}
+          </p>
+        </div>
+
+        {/* Column 3: stockists & action */}
+        <div className="p-6 flex flex-col gap-4 justify-between">
+          <div>
+            <span className="flex items-center gap-1.5 text-xs font-medium text-white/80 mb-2">
+              <StorefrontIcon className="size-3.5 text-[#D4F63D]" />
+              Verified stockists ({stateData.stockistCount})
+            </span>
+            <div className="space-y-1.5">
+              {stateData.sampleRetailers.slice(0, 3).map((retailer, i) => (
                 <div
-                  className={`text-[10px] uppercase font-semibold ${
-                    isSelected ? "text-background/80" : "text-muted-foreground"
-                  }`}
+                  key={i}
+                  className="text-[11px] text-white/75 flex items-center gap-2 truncate bg-white/5 border border-white/5 px-3 py-1.5 rounded-xl"
                 >
-                  Grade {grade}
+                  <StorefrontIcon className="size-3 text-[#D4F63D] shrink-0" />
+                  <span className="truncate">{retailer}</span>
                 </div>
-                <div className="font-mono text-sm font-semibold mt-0.5">
-                  RM {stateData.prices[grade].toFixed(2)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Notes & Market Surveillance */}
-        <div className="text-xs text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
-          <p className="line-clamp-2">{stateData.notes}</p>
-        </div>
-
-        {/* Verified Stockists Sample */}
-        <div className="mt-3.5">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-            <span className="flex items-center gap-1 font-medium text-foreground">
-              <StorefrontIcon className="size-3.5 text-muted-foreground" />
-              Verified Retail Stockists ({stateData.stockistCount})
-            </span>
+              ))}
+            </div>
           </div>
-          <div className="space-y-1">
-            {stateData.sampleRetailers.slice(0, 2).map((retailer, i) => (
-              <div
-                key={i}
-                className="text-[11px] text-muted-foreground flex items-center gap-1.5 truncate bg-muted/20 px-2 py-1 rounded-md"
-              >
-                <span className="size-1 rounded-full bg-emerald-600 shrink-0" />
-                <span className="truncate">{retailer}</span>
-              </div>
-            ))}
+
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/10">
+            {stateData.status === "verified" ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-[#D4F63D] font-medium">
+                <ShieldCheckIcon weight="fill" className="size-3.5 text-[#D4F63D]" />
+                DOA Verified
+              </span>
+            ) : stateData.status === "high_risk" ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-rose-400 font-medium">
+                <WarningCircleIcon weight="fill" className="size-3.5" />
+                Scan QR Before Buying
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[11px] text-amber-300 font-medium">
+                <WarningCircleIcon weight="fill" className="size-3.5" />
+                Monitored Corridor
+              </span>
+            )}
+
+            <LimeButton
+              onClick={onVerifyBatchClick}
+              className="gap-1.5 text-xs px-3.5 py-1.5 shadow-sm shrink-0"
+            >
+              <span>Verify Batch</span>
+              <ArrowUpRightIcon className="size-3.5 text-black transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </LimeButton>
           </div>
         </div>
-      </div>
-
-      {/* Footer Status & Action */}
-      <div className="mt-5 pt-3 border-t border-border/60 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          {stateData.status === "verified" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-              <ShieldCheckIcon weight="fill" className="size-3.5" />
-              DOA Verified Corridors
-            </span>
-          ) : stateData.status === "high_risk" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium">
-              <WarningCircleIcon weight="fill" className="size-3.5" />
-              Scan QR Before Buying
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-              <WarningCircleIcon weight="fill" className="size-3.5" />
-              Market Monitored
-            </span>
-          )}
-        </div>
-
-        <button
-          onClick={onVerifyBatchClick}
-          className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer group"
-        >
-          Inspect Sample Batch
-          <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
-        </button>
       </div>
     </div>
   );
