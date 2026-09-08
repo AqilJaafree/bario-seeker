@@ -22,7 +22,7 @@ const modal = (page: Page) => page.getByRole("dialog");
 
 /** Type a batch id into the hero search box and submit. */
 async function verifyBatch(page: Page, batchId: string) {
-  const input = page.getByPlaceholder(/Enter bag serial or batch/i);
+  const input = page.getByPlaceholder(/Enter bag serial/i);
   await input.fill(batchId);
   await input.press("Enter");
   await expect(modal(page)).toBeVisible();
@@ -47,8 +47,8 @@ test.describe("landing page", () => {
     expect(errors, `console errors: ${errors.join(" | ")}`).toHaveLength(0);
   });
 
-  test("opens the verification modal from the header button", async ({ page }) => {
-    await page.getByRole("button", { name: /Verify Batch QR/i }).first().click();
+  test("opens the verification modal from the hero search", async ({ page }) => {
+    await page.getByRole("button", { name: /Verify Batch/i }).first().click();
     await expect(modal(page)).toBeVisible();
   });
 });
